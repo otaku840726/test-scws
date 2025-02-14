@@ -30,5 +30,6 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3000,
+    allowedHosts: process.env.ALLOWED_HOSTS ? process.env.ALLOWED_HOSTS.split(',') : ['localhost', '3050--main--test-scws--otaku840726.coder.ohya.day']
   },
 })

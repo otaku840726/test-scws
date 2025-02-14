@@ -8,6 +8,10 @@ export const DEAULT_MAX_FPS = 60
 
 export const DEAULT_BIT_RATE = 4
 
+export const DEAULT_MAX_SIZE = 1280
+
+export const DEAULT_PROTOCOL = 'websocket'
+
 export const FILE_EXTENSIONS = ['apk', 'apkm', 'xapk']
 
 export const PACK_OPTIONS = {

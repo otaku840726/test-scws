@@ -7,17 +7,21 @@ import {
 	InspectStream,
 	DistributionStream,
 } from "@yume-chan/stream-extra";
+import { AndroidScreenPowerMode } from "@yume-chan/scrcpy" 
 import { AdbServerNodeTcpConnector } from "@yume-chan/adb-server-node-tcp";
 import { AdbServerClient } from "@yume-chan/adb";
 
 import {
-	CodecOptions,
+	ScrcpyCodecOptions,
 	ScrcpyInstanceId,
-	DEFAULT_SERVER_PATH,
-	ScrcpyLogLevel,
+	DefaultServerPath,
+	// ScrcpyLogLevel,
 	ScrcpyOptionsLatest,
 	ScrcpyOptions2_3,
-	ScrcpyVideoOrientation,
+	ScrcpyOptions3_1,
+	ScrcpyOptions3_0,
+	ScrcpyOptions2_6,
+	// ScrcpyVideoOrientation,
 } from "@yume-chan/scrcpy";
 
 import {
@@ -29,6 +33,7 @@ import { logger } from "../logger.js";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { global } from "../../state/global.js";
+import { version } from "node:os";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export class ProgressStream extends InspectStream {
@@ -40,6 +45,7 @@ export class ProgressStream extends InspectStream {
 		});
 	}
 }
+
 
 logger.info(`VERSION=${VERSION}`); // 2.1
 
@@ -105,11 +111,11 @@ class AdbTcpService {
 			await pushServer(deviceAdb);
 			result = await AdbScrcpyClient.getDisplays(
 				deviceAdb,
-				DEFAULT_SERVER_PATH,
-				VERSION,
-				new AdbScrcpyOptionsLatest(
-					new ScrcpyOptionsLatest({
-						logLevel: ScrcpyLogLevel.Debug,
+				DefaultServerPath,
+				new AdbScrcpyOptions2_1(
+					new ScrcpyOptions3_1({
+						// logLevel: ScrcpyLogLevel.Debug,
+						version: VERSION
 					}),
 				),
 			);
@@ -127,17 +133,18 @@ class AdbTcpService {
 			await pushServer(deviceAdb);
 			result = await AdbScrcpyClient.getEncoders(
 				deviceAdb,
-				DEFAULT_SERVER_PATH,
-				VERSION,
-				new AdbScrcpyOptionsLatest(
-					new ScrcpyOptionsLatest({
-						logLevel: ScrcpyLogLevel.Debug,
+				DefaultServerPath,
+				new AdbScrcpyOptions2_1(
+					new ScrcpyOptions3_1({
+						// logLevel: ScrcpyLogLevel.Debug,
+						version: VERSION
 					}),
 				),
 			);
 			trial++;
 		}
 		logger.info(`getDeviceEncoders in trial=${trial}`);
+		logger.info(`getDeviceEncoders in trial=${result}`);
 		return result;
 	}
 
@@ -153,9 +160,10 @@ class AdbTcpService {
 			displayId,
 			maxSize,
 			maxFps,
+			captureOrientation,
 		} = user.ws;
-		const videoCodecOptions = new CodecOptions({});
-		const audioCodecOptions = new CodecOptions();
+		const videoCodecOptions = new ScrcpyCodecOptions({});
+		const audioCodecOptions = new ScrcpyCodecOptions();
 
 		const config = {
 			audio,
@@ -168,9 +176,9 @@ class AdbTcpService {
 			displayId,
 			maxSize,
 			maxFps,
-			logLevel: ScrcpyLogLevel.Debug,
+			// logLevel: ScrcpyLogLevel.Debug,
 			scid: ScrcpyInstanceId.random(),
-			lockVideoOrientation: ScrcpyVideoOrientation.Unlocked,
+			// lockVideoOrientation: ScrcpyVideoOrientation.Unlocked,
 			// sendDeviceMeta: false,
 			// sendFrameMeta: false,
 			// sendCodecMeta: false,
@@ -179,20 +187,28 @@ class AdbTcpService {
 			tunnelForward: true,
 			videoCodecOptions,
 			audioCodecOptions,
+			stayAwake: true,
+			captureOrientation: captureOrientation,
+			// angle: 1
+			// version: VERSION
 		};
-		const options = new AdbScrcpyOptions2_1(new ScrcpyOptions2_3(config));
+		console.log(config)
+		const options = new AdbScrcpyOptions2_1(new ScrcpyOptions3_1(config));
 
 		await pushServer(deviceAdb);
 		const client = await AdbScrcpyClient.start(
 			deviceAdb,
-			DEFAULT_SERVER_PATH,
-			VERSION,
+			DefaultServerPath,
 			options,
 		);
 		return {
 			client,
 			options,
 		};
+	}
+
+	async closeScreen(client) {
+		client.controller?.setScreenPowerMode(AndroidScreenPowerMode.Off)
 	}
 
 	async getDeviceAdb(deviceSerial) {

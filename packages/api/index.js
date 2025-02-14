@@ -11,6 +11,8 @@ import { global } from "./state/global.js";
 import App from "./utils/http/app.js";
 import { routes } from "./routes/index.js";
 import { cors } from "./utils/http/middie/cors.js";
+import wrtc from "@roamhq/wrtc";
+import { json } from "node:stream/consumers";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const msgpackOptions = {
@@ -26,6 +28,67 @@ const host = process.env.HOST || "0.0.0.0";
 const port = process.env.PORT || 9001;
 global.users = new Map();
 
+const iceServers = [
+	{ urls: "stun:stun.l.google.com:19302" },
+	// { urls: "stun:stun1.l.google.com:19302" },
+	// { urls: "stun:stun2.l.google.com:19302" },
+	// { urls: "stun:stun3.l.google.com:19302" },
+];
+
+const createMediaChannel = async (user) => {
+	if (!user.peer) {
+		return;
+	}
+
+	user.mediaChannel = user.peer.createDataChannel("media",{
+		ordered: false,
+		maxRetransmits: 0
+	});
+
+	user.mediaChannel.onopen = () => {
+		console.log("mediaChannel is open");
+	};
+
+	user.mediaChannel.onerror = (error) => {
+		console.error("mediaChannel error:", error);
+	};
+	user.mediaChannel.onclose = (event) => {
+		console.log("mediaChannel is closed");
+		user.client?.controller?.resetVideo();
+		createMediaChannel(user);
+	};
+	user.mediaChannel.onmessage = (event) => {
+		const record = unpacker.unpack(event.data);
+		if (record.cmd) {
+			if (user?.client?.controller) {
+				if (record.cmd === "injectKeyCode") {
+					user.client.controller.injectKeyCode(record.payload);
+				} else if (record.cmd === "injectTouch") {
+					user.client.controller.injectTouch(record.payload);
+				} else if (record.cmd === "injectScroll") {
+					user.client.controller.injectScroll(record.payload);
+				} else if (record.cmd === "setScreenPowerMode") {
+					user.client.controller.setScreenPowerMode(record.payload);
+				} else if (record.cmd === "rotateDevice") {
+					user.client.controller.rotateDevice();
+				} else if (record.cmd === "setScreenPowerMode") {
+					user.client.controller.setScreenPowerMode(record.payload);
+				} else if (record.cmd === "clipboardPaste") {
+					user.client.controller.setClipboard(record.payload);
+				} else if (record.cmd === "injectText") {
+					user.client.controller.injectText(record.payload);
+				} else {
+					logger.info(`Got webrtc message record ${record}`);
+				}
+			}
+		} else if (record.protocol) {
+			user.protocol = record.protocol;
+			logger.info(`Protocol ${record.protocol}`);
+		}
+	};
+	user.ws?.send(JSON.stringify({ reconnectDataChannel: "media" }));
+};
+
 const run = async () => {
 	const app = new App({
 		host,
@@ -38,6 +101,7 @@ const run = async () => {
 	app.server
 		.ws("/*", {
 			/* Options */
+			// noDelay: true,
 			compression: uWs.SHARED_COMPRESSOR,
 			maxPayloadLength: 16 * 1024, // 16 * 1024 * 1024
 			idleTimeout: 0,
@@ -70,6 +134,12 @@ const run = async () => {
 						maxFps: ![null, undefined].includes(req.getQuery("maxFps"))
 							? Number.parseInt(req.getQuery("maxFps"))
 							: 60,
+						protocol: ![null, undefined].includes(req.getQuery("protocol"))
+							? req.getQuery("protocol")
+							: 'websocket',
+						captureOrientation: ![null, undefined].includes(req.getQuery("captureOrientation"))
+						? req.getQuery("captureOrientation")
+						: '0',
 					},
 					/* Use our copies here */
 					req.getHeader("sec-websocket-key"),
@@ -80,12 +150,40 @@ const run = async () => {
 			},
 			open: async (ws) => {
 				try {
-					const { id, device } = ws;
+					const { id, device, protocol } = ws;
+					logger.info(`WebSocket connected with id: ${id}`);
 					const user = {
 						ws,
 						client: null,
 						abortController: new AbortController(),
+						peer: new wrtc.RTCPeerConnection({ iceServers }),
+						mediaChannel: null,
+						protocol: protocol
 					};
+
+					logger.info(`new peer connection created for user ${id}`);
+
+					await createMediaChannel(user);
+
+					user.peer.onicecandidate = (event) => {
+						if (event.candidate) {
+							logger.info("send candidate");
+							user.ws?.send(
+								JSON.stringify({
+									candidate: event.candidate,
+								}),
+							);
+						}
+					};
+					const offer = await user.peer.createOffer();
+					await user.peer.setLocalDescription(offer);
+					logger.info("send offer");
+					user.ws?.send(
+						JSON.stringify({
+							offer: offer,
+						}),
+					);
+
 					global.users.set(id, user);
 
 					const deviceAdb = await adbTcpService.getDeviceAdb(device);
@@ -118,6 +216,7 @@ const run = async () => {
 												message,
 											});
 											if (user.ws) {
+												logger.info("send message");
 												const ok = user.ws?.send(array, true);
 												if (ok !== 1) {
 													logger.info(`WS not sent with status: ${ok}`);
@@ -162,9 +261,15 @@ const run = async () => {
 														media: "audio",
 														packet,
 													});
-													if (user.ws) {
+													if (user.protocol === 'websocket' && user.ws) {
 														ok = user.ws?.send(array, true);
 														if (!ok) logger.info("not ok", ok);
+													} else if (
+														user.protocol === 'webrtc' &&
+														user.mediaChannel &&
+														user.mediaChannel?.readyState === "open"
+													) {
+														user.mediaChannel?.send(array);
 													}
 												} catch (ex) {
 													logger.error(ex);
@@ -192,6 +297,8 @@ const run = async () => {
 							media: "video_metadata",
 							packet: videoMetadata,
 						});
+
+						// logger.info("send video_metadata")
 						let ok = user.ws?.send(array, true);
 						if (ok !== 1) {
 							logger.info(`WS not sent with status: ${ok}`);
@@ -206,11 +313,17 @@ const run = async () => {
 												media: "video",
 												packet,
 											});
-											if (user.ws) {
+											if (user.protocol === 'websocket' && user.ws) {
 												ok = user.ws?.send(array, true);
 												if (ok !== 1) {
 													logger.info(`WS not sent with status: ${ok}`);
 												}
+											} else if (
+												user.protocol === 'webrtc' &&
+												user.mediaChannel &&
+												user.mediaChannel?.readyState === "open"
+											) {
+												user.mediaChannel.send(array);
 											}
 										} catch (ex) {
 											logger.error(ex);
@@ -231,26 +344,56 @@ const run = async () => {
 					ws.close();
 				}
 			},
-			message: (ws, message) => {
+			message: async (ws, message, isBinary) => {
 				const { id } = ws;
 				try {
 					const user = global.users.get(id);
-					if (user?.client?.controller) {
-						const record = unpacker.unpack(message);
-						if (record.cmd === "injectKeyCode") {
-							user.client.controller.injectKeyCode(record.payload);
-						} else if (record.cmd === "injectTouch") {
-							user.client.controller.injectTouch(record.payload);
-						} else if (record.cmd === "injectScroll") {
-							user.client.controller.injectScroll(record.payload);
-						} else if (record.cmd === "setScreenPowerMode") {
-							user.client.controller.setScreenPowerMode(record.payload);
-						} else if (record.cmd === "rotateDevice") {
-							user.client.controller.rotateDevice();
-						} else if (record.cmd === "setScreenPowerMode") {
-							user.client.controller.setScreenPowerMode(record.payload);
-						} else if (record.cmd === "clipboardPaste") {
-							user.client.controller.setClipboard(record.payload);
+					const record = unpacker.unpack(message);
+					if (record.cmd) {
+						if (user?.client?.controller) {
+							if (record.cmd === "injectKeyCode") {
+								user.client.controller.injectKeyCode(record.payload);
+							} else if (record.cmd === "injectTouch") {
+								user.client.controller.injectTouch(record.payload);
+							} else if (record.cmd === "injectScroll") {
+								user.client.controller.injectScroll(record.payload);
+							} else if (record.cmd === "setScreenPowerMode") {
+								user.client.controller.setScreenPowerMode(record.payload);
+							} else if (record.cmd === "rotateDevice") {
+								user.client.controller.rotateDevice();
+							} else if (record.cmd === "setScreenPowerMode") {
+								user.client.controller.setScreenPowerMode(record.payload);
+							} else if (record.cmd === "clipboardPaste") {
+								user.client.controller.setClipboard(record.payload);
+							} else if (record.cmd === "injectText") {
+								user.client.controller.injectText(record.payload);
+							} else {
+								logger.info(`Got ws message record ${record}`);
+							}
+						}
+					} else if (record.protocol) {
+						user.protocol = record.protocol;
+						logger.info(`Protocol ${record.protocol}`);
+					} else if (record.isWebrtc) {
+						logger.info(`Got ws message ${JSON.stringify(record)}`);
+						// if (record.type === 'offer') {
+						// 	await user.peer.setRemoteDescription(new wrtc.RTCSessionDescription(record.sdp));
+						// 	const answer = await user.peer.createAnswer();
+						// 	await user.peer.setLocalDescription(answer);
+						// 	ws.send(JSON.stringify({ type: 'answer', sdp: user.peer.localDescription }));
+						//   } else if (record.type === 'candidate') {
+						// 	await user.peer.addIceCandidate(record.candidate);
+						// }
+						if (record.answer) {
+							await user.peer.setRemoteDescription(
+								new wrtc.RTCSessionDescription(record.answer),
+							);
+						}
+
+						if (record.candidate) {
+							await user.peer.addIceCandidate(
+								new wrtc.RTCIceCandidate(record.candidate),
+							);
 						}
 					}
 				} catch (ex) {
@@ -274,8 +417,26 @@ const run = async () => {
 								logger.error(err);
 							}
 						}
+						if (user.mediaChannel) {
+							try {
+								// user.abortController.abort();
+								user.mediaChannel.close();
+							} catch (err) {
+								logger.error(err);
+							}
+						}
+						if (user.peer) {
+							try {
+								// user.abortController.abort();
+								user.peer.close();
+							} catch (err) {
+								logger.error(err);
+							}
+						}
 
 						user.ws = null;
+						user.peer = null;
+						user.mediaChannel = null;
 						global.users.set(id, {});
 						if (user.client) {
 							await user.client.close();
@@ -289,7 +450,6 @@ const run = async () => {
 		.get("/*", (res, req) => {
 			const request = new Request(res, req, {});
 			const response = new Response(res, req, {}, request);
-
 			const folder = join(__dirname, "..", "ui", "dist");
 			const path = req.getUrl();
 			const compress = false;

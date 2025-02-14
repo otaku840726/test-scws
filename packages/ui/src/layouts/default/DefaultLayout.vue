@@ -31,7 +31,7 @@
     <v-app id="v-app">
       <v-layout class="rounded rounded-md">
         <!-- TOP NAVIGATION (HEADER) -->
-        <TopNav />
+        <!-- <TopNav /> -->
 
         <!-- MAIN PAGE -->
         <default-view />

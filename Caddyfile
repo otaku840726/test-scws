@@ -1,0 +1,50 @@
+{
+	servers {
+    	trusted_proxies cloudflare {
+      		interval 12h
+      		timeout 15s
+    	}
+  	}
+}
+
+:3050 {
+
+	@js {
+        path *.js
+    }
+    header @js Content-Type application/javascript
+
+	@websockets query token=*
+
+	@websockets2 query id=*
+
+    @api {
+        path /api/*
+    }
+	
+	@get_root {
+        method GET
+        path /
+    }
+
+	handle @websockets {
+		reverse_proxy http://127.0.0.1:3000
+	}
+
+	handle @websockets2 {
+		reverse_proxy http://127.0.0.1:4001
+	}
+
+	handle @api {
+		reverse_proxy http://127.0.0.1:4001
+	}
+
+	route {
+    	exec @get_root {
+			command ./adb_connect.sh
+        	timeout 0
+			pass_thru true
+    	}
+		reverse_proxy http://127.0.0.1:3000
+	}
+}

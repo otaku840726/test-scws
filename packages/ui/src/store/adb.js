@@ -2,6 +2,8 @@
 import { defineStore } from "pinia";
 import { adbService as service } from "@/services/adb/adb-service";
 
+import { DEAULT_PROTOCOL } from '@/utils/constants'
+
 export const useAdbStore = defineStore("adb", {
 	state: () => ({
 		features: [],
@@ -10,10 +12,12 @@ export const useAdbStore = defineStore("adb", {
 		display: null,
 		audioEncoder: "raw",
 		videoEncoder: null,
+		protocol: DEAULT_PROTOCOL
 	}),
 	actions: {
 		async metainfo() {
 			const result = await service.metainfo();
+			console.dir(result)
 			this.features = result?.data?.features || [];
 
 			this.devices = result?.data?.devices || [];
@@ -93,7 +97,7 @@ export const useAdbStore = defineStore("adb", {
 			];
 
 			const defaultVideoEncoder = result.find(
-				(e) => e.codec === "h264" && e.decoder === "TinyH264",
+				(e) => e.codec === "h264" && e.decoder === "WebCodecs",
 			);
 			if (defaultVideoEncoder) {
 				this.videoEncoder = defaultVideoEncoder.id;

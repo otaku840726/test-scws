@@ -17,10 +17,16 @@
             " label="Video" required style="max-width: 250px" prepend-inner-icon="mdi-video-box"></v-select>
         </v-col>
         <v-col cols="auto">
+          <v-select v-model="maxSize" :items="resolutions" label="MaxSize"></v-select>
+        </v-col>
+        <v-col cols="auto">
           <v-number-input v-model="maxFps" label="FPS" :max="90" :min="1" control-variant="stacked"></v-number-input>
         </v-col>
         <v-col cols="auto">
           <v-number-input v-model="bitRate" label="Kbits" :max="16" :min="1" control-variant="stacked"></v-number-input>
+        </v-col>
+        <v-col cols="auto">
+          <v-select v-model="adbStore.protocol" :items="protocols" label="Protocol" @update:modelValue="changeProtocol"></v-select>
         </v-col>
       </v-row>
     </v-col>
@@ -39,18 +45,55 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRoute } from 'vue-router';
 import { useAdbStore } from '@/store/adb'
-import { DEAULT_BIT_RATE, DEAULT_MAX_FPS } from '@/utils/constants'
+import { DEAULT_BIT_RATE, DEAULT_MAX_FPS, DEAULT_MAX_SIZE, DEAULT_PROTOCOL } from '@/utils/constants'
 
-const props = defineProps(['isWsOpen'])
+const props = defineProps([
+  'isWsOpen',
+  'sendEvent',
+])
+
 const emit = defineEmits(['onStart'])
 
 const adbStore = useAdbStore()
+const route = useRoute();
 
 const maxFps = ref(DEAULT_MAX_FPS)
 const bitRate = ref(DEAULT_BIT_RATE)
+const maxSize = ref(DEAULT_MAX_SIZE)
+const resolutions = [720, 1280, 1920]
+const protocols = [DEAULT_PROTOCOL, 'webrtc']
+
+if (route.query.maxFps) {
+  maxFps.value = route.query.maxFps
+}
+if (route.query.bitRate) {
+  bitRate.value = route.query.bitRate
+}
+if (route.query.maxSize) {
+  maxSize.value = route.query.maxSize
+}
+if (route.query.protocol) {
+  adbStore.protocol = route.query.protocol
+}
 
 const start = async () => {
-  emit('onStart', { maxFps: maxFps.value, bitRate: bitRate.value })
+  emit('onStart', { maxFps: maxFps.value, bitRate: bitRate.value, maxSize: maxSize.value })
 }
+
+document.addEventListener('visibilitychange', async function() {
+  console.log(document.visibilityState)
+  if (document.visibilityState !== 'hidden') {
+    await start()
+  }
+});
+
+const changeProtocol = () => {
+  console.log(adbStore.protocol)
+  props.sendEvent({
+    protocol: adbStore.protocol
+  })
+}
+
 </script>

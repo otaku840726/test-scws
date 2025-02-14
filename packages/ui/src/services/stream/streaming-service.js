@@ -13,6 +13,9 @@ class StreamingService {
 		videoEncoder = undefined,
 		videoBitRate = undefined,
 		maxFps = undefined,
+		maxSize = undefined,
+		protocol = undefined,
+		captureOrientation = undefined,
 		onopen = (ws, id, evt) => {},
 		onclose = (ws, id, evt) => {},
 		onmessage = (ws, id, evt) => {},
@@ -30,6 +33,9 @@ class StreamingService {
 				videoEncoder,
 				videoBitRate,
 				maxFps,
+				maxSize,
+				protocol,
+				captureOrientation,
 				onopen,
 				onclose,
 				onmessage,
@@ -52,6 +58,9 @@ class StreamingService {
 			videoEncoder,
 			videoBitRate,
 			maxFps,
+			maxSize,
+			protocol,
+			captureOrientation,
 			onopen,
 			onclose,
 			onmessage,
@@ -59,7 +68,7 @@ class StreamingService {
 		},
 		id,
 	) {
-		const wsUri = `${import.meta.env.VITE_BACKEND_WS_URL || ""}/?id=${id}&device=${device}&audio=${audio}${audio ? `&audioCodec=${audioCodec}&audioEncoder=${audioEncoder}` : ""}&video=${video}${video ? `&videoCodec=${videoCodec}&videoEncoder=${videoEncoder}&maxFps=${maxFps}&videoBitRate=${videoBitRate}` : ""}`;
+		const wsUri = `${import.meta.env.VITE_BACKEND_WS_URL || ""}/?id=${id}&device=${device}&audio=${audio}${audio ? `&audioCodec=${audioCodec}&audioEncoder=${audioEncoder}` : ""}&video=${video}${video ? `&videoCodec=${videoCodec}&videoEncoder=${videoEncoder}&maxFps=${maxFps}&videoBitRate=${videoBitRate}&maxSize=${maxSize}&protocol=${protocol}&captureOrientation=${captureOrientation}` : ""}`;
 		console.log(wsUri);
 		const ws = new WebSocket(wsUri);
 		ws.binaryType = "arraybuffer";

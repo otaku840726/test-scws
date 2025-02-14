@@ -10,6 +10,18 @@
       <v-btn v-tooltip="'Rotate'" @click="rotateDevice">
         <v-icon>mdi-phone-rotate-landscape</v-icon>
       </v-btn>
+      <v-btn v-tooltip="'AppSwitch'" @click="clickAppSwitch">
+        <v-icon>mdi-apps-box</v-icon>
+      </v-btn>
+      <v-btn v-tooltip="'Home'" @click="clickHome">
+        <v-icon>mdi-home-circle</v-icon>
+      </v-btn>
+      <v-btn v-tooltip="'Back'" @click="clickBack">
+        <v-icon>mdi-arrow-left</v-icon>
+      </v-btn>
+      <v-btn v-tooltip="'ShowKeyboard'" @click="showKeyboard">
+        <v-icon>mdi-keyboard</v-icon>
+      </v-btn>
       <v-btn v-tooltip="'Fullscreen'" @click="enterFullscreen">
         <v-icon>mdi-fullscreen</v-icon>
       </v-btn>
@@ -86,6 +98,73 @@ const volumeDown = () => {
       metaState: 0,
     },
   })
+}
+
+const clickAppSwitch = () => {
+  props.sendEvent({
+    cmd: 'injectKeyCode',
+    payload: {
+      action: AndroidKeyEventAction.Down,
+      keyCode: AndroidKeyCode.AndroidAppSwitch,
+      repeat: 0,
+      metaState: 0,
+    },
+  })
+  props.sendEvent({
+    cmd: 'injectKeyCode',
+    payload: {
+      action: AndroidKeyEventAction.Up,
+      keyCode: AndroidKeyCode.AndroidAppSwitch,
+      repeat: 0,
+      metaState: 0,
+    },
+  })
+}
+
+const clickHome = () => {
+  props.sendEvent({
+    cmd: 'injectKeyCode',
+    payload: {
+      action: AndroidKeyEventAction.Down,
+      keyCode: AndroidKeyCode.AndroidHome,
+      repeat: 0,
+      metaState: 0,
+    },
+  })
+  props.sendEvent({
+    cmd: 'injectKeyCode',
+    payload: {
+      action: AndroidKeyEventAction.Up,
+      keyCode: AndroidKeyCode.AndroidHome,
+      repeat: 0,
+      metaState: 0,
+    },
+  })
+}
+
+const clickBack = () => {
+  props.sendEvent({
+    cmd: 'injectKeyCode',
+    payload: {
+      action: AndroidKeyEventAction.Down,
+      keyCode: AndroidKeyCode.AndroidBack,
+      repeat: 0,
+      metaState: 0,
+    },
+  })
+  props.sendEvent({
+    cmd: 'injectKeyCode',
+    payload: {
+      action: AndroidKeyEventAction.Up,
+      keyCode: AndroidKeyCode.AndroidBack,
+      repeat: 0,
+      metaState: 0,
+    },
+  })
+}
+
+const showKeyboard = () => {
+  document.getElementById('hiddenInput').focus();
 }
 
 const enterFullscreen = () => {

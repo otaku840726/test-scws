@@ -7,20 +7,21 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development EXPERIMENTAL_FASTCALL=1 nodemon index.js --config nodemon.json",
     "start": "pm2-runtime start pm2.config.cjs",
-    "build-and-start": "cd ../ui && ./patch.sh && pnpm run build && cd ../api && npx @yume-chan/fetch-scrcpy-server 2.6.1 && adb devices && pnpm run start"
+    "build-and-start": "cd ../ui && ./patch.sh && pnpm run build && cd ../api && npx @yume-chan/fetch-scrcpy-server 3.1 && adb devices && pnpm run start"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@yume-chan/adb": "^0.0.24",
-    "@yume-chan/adb-scrcpy": "^0.0.24",
-    "@yume-chan/adb-server-node-tcp": "^0.0.24",
-    "@yume-chan/android-bin": "^0.0.24",
-    "@yume-chan/async": "^2.2.0",
-    "@yume-chan/scrcpy": "^0.0.24",
-    "@yume-chan/scrcpy-decoder-tinyh264": "^0.0.24",
-    "@yume-chan/stream-extra": "^0.0.24",
-    "cookie": "^0.6.0",
+    "@roamhq/wrtc": "^0.8.0",
+    "@yume-chan/adb": "^1.1.0",
+    "@yume-chan/adb-scrcpy": "^1.1.0",
+    "@yume-chan/adb-server-node-tcp": "^1.1.0",
+    "@yume-chan/android-bin": "^1.1.0",
+    "@yume-chan/async": "^4.0.2",
+    "@yume-chan/scrcpy": "^1.1.0",
+    "@yume-chan/scrcpy-decoder-tinyh264": "^1.1.0",
+    "@yume-chan/stream-extra": "^1.0.0",
+    "cookie": "^1.0.2",
     "cross-env": "^7.0.3",
     "dotenv": "^16.4.5",
     "fast-json-stringify": "^6.0.0",
@@ -35,6 +36,6 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
-    "@yume-chan/fetch-scrcpy-server": "^0.0.24"
+    "@yume-chan/fetch-scrcpy-server": "^1.0.0"
   }
 }

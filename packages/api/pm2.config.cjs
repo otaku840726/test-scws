@@ -21,6 +21,8 @@ module.exports = {
 				HOST: "0.0.0.0",
 				PORT: "4001",
 			},
+            output: '/dev/stdout',
+            error: '/dev/stderr'
 		},
 	],
 };
