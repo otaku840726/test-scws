@@ -172,6 +172,18 @@ const enterFullscreen = () => {
   fullscreen.requestFullscreen()
 }
 
+function fullscreenchangeHandler(event) {
+  if (document.fullscreenElement) {
+    console.log(`Element: ${document.fullscreenElement.id} entered fullscreen mode.`);
+    fullscreen.children[0].children[0].style.height = "100%";
+  } else {
+    console.log("Leaving fullscreen mode.");
+    fullscreen.children[0].children[0].style.height = "85vh";
+  }
+}
+
+document.addEventListener("fullscreenchange", fullscreenchangeHandler);
+
 const rotateDevice = () => {
   props.sendEvent({
     cmd: 'rotateDevice',

@@ -54,7 +54,9 @@ const createMediaChannel = async (user) => {
 	};
 	user.mediaChannel.onclose = (event) => {
 		console.log("mediaChannel is closed");
-		user.client?.controller?.resetVideo();
+		if (user.protocol === 'webrtc') {
+			user.client?.controller?.resetVideo();
+		}
 		createMediaChannel(user);
 	};
 	user.mediaChannel.onmessage = (event) => {

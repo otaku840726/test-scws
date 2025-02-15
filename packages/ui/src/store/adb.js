@@ -54,13 +54,20 @@ export const useAdbStore = defineStore("adb", {
 			};
 		},
 		audioEncoders() {
-			return [
+			const result = [
 				{ type: "audio", id: "off", codec: "off", name: "off" },
 				{ type: "audio", id: "raw", codec: "raw", name: "raw" },
 				...(
 					this.deviceObj?.encoders.filter((e) => e.type === "audio") || []
 				).map((e) => ({ ...e, id: e.name })),
 			];
+			const defaultAudioEncoder = result.find(
+				(e) => e.codec === "opus" ,
+			);
+			if (defaultAudioEncoder) {
+				this.audioEncoder = defaultAudioEncoder.id;
+			}
+			return result;
 		},
 		audioEncoderObj() {
 			return this.audioEncoders.find((e) => e.id === this.audioEncoder);

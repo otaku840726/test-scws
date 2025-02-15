@@ -19,6 +19,7 @@ import {
 	ScrcpyOptionsLatest,
 	ScrcpyOptions2_3,
 	ScrcpyOptions3_1,
+	ScrcpyOptions2_0,
 	ScrcpyOptions3_0,
 	ScrcpyOptions2_6,
 	// ScrcpyVideoOrientation,
@@ -189,6 +190,7 @@ class AdbTcpService {
 			audioCodecOptions,
 			stayAwake: true,
 			captureOrientation: captureOrientation,
+			audioBitRate: 32000,
 			// angle: 1
 			// version: VERSION
 		};

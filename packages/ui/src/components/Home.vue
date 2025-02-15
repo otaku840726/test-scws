@@ -389,7 +389,7 @@ const start = async ({ maxFps, bitRate, maxSize }) => {
 
 	if (["off", "raw"].includes(adbStore.audioEncoderObj?.codec)) {
 		audioPlayer = new Int16PcmPlayer(48000, 2);
-	} else if (["aac"].includes(adbStore.audioEncoderObj?.codec)) {
+	} else if (["aac","flac"].includes(adbStore.audioEncoderObj?.codec)) {
 		audioPlayer = new Float32PlanerPcmPlayer(48000, 2);
 	} else if (["opus"].includes(adbStore.audioEncoderObj?.codec)) {
 		audioPlayer = new Float32PcmPlayer(48000, 2);
@@ -422,7 +422,7 @@ const start = async ({ maxFps, bitRate, maxSize }) => {
 	}
 
 	renderer.style.maxWidth = "100%";
-	renderer.style.height = "90vh";
+	renderer.style.height = "85vh";
 	renderer.style.touchAction = "none";
 	renderer.style.outline = "none";
 	container.appendChild(renderer);
@@ -485,7 +485,7 @@ const start = async ({ maxFps, bitRate, maxSize }) => {
 		})
 			.pipeThrough(
 				new AacDecodeStream({
-					codec: ScrcpyAudioCodec.AAC.webCodecId, //metadata.codec.webCodecId,
+					codec: ScrcpyAudioCodec.Aac.webCodecId, //metadata.codec.webCodecId,
 					numberOfChannels: 2,
 					sampleRate: 48000,
 				}),
@@ -516,7 +516,7 @@ const start = async ({ maxFps, bitRate, maxSize }) => {
 		})
 			.pipeThrough(
 				new OpusDecodeStream({
-					codec: ScrcpyAudioCodec.OPUS.webCodecId, //metadata.codec.webCodecId,
+					codec: ScrcpyAudioCodec.Opus.webCodecId, //metadata.codec.webCodecId,
 					numberOfChannels: 2,
 					sampleRate: 48000,
 				}),
@@ -539,7 +539,38 @@ const start = async ({ maxFps, bitRate, maxSize }) => {
 					return;
 				}
 			});
-	}
+	}else if (["flac"].includes(adbStore.audioEncoderObj?.codec)) {
+		new ReadableStream({
+			start(controller) {
+				audioController = controller;
+			},
+		})
+			.pipeThrough(
+				new AacDecodeStream({
+					codec: ScrcpyAudioCodec.Flac.webCodecId, //metadata.codec.webCodecId,
+					numberOfChannels: 2,
+					sampleRate: 48000,
+				}),
+				{
+					signal: abortController.signal,
+				},
+			)
+			.pipeTo(
+				new WritableStream({
+					write: (chunk) => {
+						audioPlayer.feed(chunk);
+					},
+				}),
+				{
+					signal: abortController.signal,
+				},
+			)
+			.catch((e) => {
+				if (abortController.signal.aborted) {
+					return;
+				}
+			});
+	} 
 
 	await audioPlayer.start();
 
