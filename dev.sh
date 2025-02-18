@@ -14,6 +14,28 @@ cleanup() {
 # 設置停止信號處理器
 trap cleanup SIGINT SIGTERM
 
+# 檢查 adb 是否存在
+if ! command -v adb &> /dev/null; then
+    echo "adb 未安裝，正在安裝..."
+
+    # 下載 platform-tools
+    wget https://dl.google.com/android/repository/platform-tools-latest-linux.zip
+
+    # 解壓縮
+    unzip platform-tools-latest-linux.zip
+
+    # 將 adb 複製到 /usr/bin
+    sudo cp platform-tools/adb /usr/bin/adb
+
+    # 清理下載的 zip 文件和解壓後的目錄
+    rm platform-tools-latest-linux.zip
+    rm -rf platform-tools
+
+    echo "adb 安裝完成！"
+else
+    echo "adb 已安裝。"
+fi
+
 npm i -g pnpm
 # npm i -g node-pre-gyp
 

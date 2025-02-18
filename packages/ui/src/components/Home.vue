@@ -896,4 +896,36 @@ const proxyKeyDown = (e) => {
 		down(e.key);
 	}
 };
+
+// 检查浏览器是否支持 WakeLock API
+if ('wakeLock' in navigator) {
+    let wakeLock = null;
+
+    // 请求唤醒锁
+    const requestWakeLock = async () => {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('唤醒锁已激活，屏幕将保持唤醒状态。');
+
+            // 监听唤醒锁释放事件
+            wakeLock.addEventListener('release', () => {
+                console.log('唤醒锁已释放，屏幕可能会休眠。');
+            });
+        } catch (err) {
+            console.error(`无法获取唤醒锁: ${err.message}`);
+        }
+    };
+
+    // 当页面可见时重新请求唤醒锁
+    document.addEventListener('visibilitychange', async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
+            await requestWakeLock();
+        }
+    });
+
+    // 初始请求唤醒锁
+    requestWakeLock();
+} else {
+    console.warn('当前浏览器不支持 WakeLock API。');
+}
 </script>

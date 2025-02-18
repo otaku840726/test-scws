@@ -4,11 +4,11 @@ export const AUDIO_CODECS = ['off', 'raw', 'aac', 'opus']
 
 export const VIDEO_CODECS = ['off', 'h264-tiny', 'h264-webcodec']
 
-export const DEAULT_MAX_FPS = 60
+export const DEAULT_MAX_FPS = 30
 
-export const DEAULT_BIT_RATE = 4
+export const DEAULT_BIT_RATE = 2
 
-export const DEAULT_MAX_SIZE = 1280
+export const DEAULT_MAX_SIZE = 1920
 
 export const DEAULT_PROTOCOL = 'websocket'
 

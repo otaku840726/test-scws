@@ -79,12 +79,21 @@ if (route.query.protocol) {
 }
 
 const start = async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+ 
+    urlParams.set('serial', adbStore.device);
+    urlParams.set('maxFps', maxFps.value);
+    urlParams.set('bitRate', bitRate.value);
+    urlParams.set('maxSize', maxSize.value);
+    const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+    history.replaceState(null, '', newUrl);
+  
   emit('onStart', { maxFps: maxFps.value, bitRate: bitRate.value, maxSize: maxSize.value })
 }
 
 document.addEventListener('visibilitychange', async function() {
   console.log(document.visibilityState)
-  if (document.visibilityState !== 'hidden') {
+  if (document.visibilityState !== 'hidden' && adbStore.device) {
     await start()
   }
 });

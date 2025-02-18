@@ -10,7 +10,7 @@ export const useAdbStore = defineStore("adb", {
 		devices: [],
 		device: null,
 		display: null,
-		audioEncoder: "raw",
+		audioEncoder: null,
 		videoEncoder: null,
 		protocol: DEAULT_PROTOCOL
 	}),
@@ -61,12 +61,11 @@ export const useAdbStore = defineStore("adb", {
 					this.deviceObj?.encoders.filter((e) => e.type === "audio") || []
 				).map((e) => ({ ...e, id: e.name })),
 			];
-			const defaultAudioEncoder = result.find(
-				(e) => e.codec === "opus" ,
-			);
-			if (defaultAudioEncoder) {
-				this.audioEncoder = defaultAudioEncoder.id;
-			}
+			const codecOrder = { opus: 1, aac: 2, flac: 3, raw: 4, off: 5 };
+
+			this.audioEncoder = result.slice().sort((a, b) => 
+				codecOrder[a.codec] - codecOrder[b.codec])[0].id;
+
 			return result;
 		},
 		audioEncoderObj() {

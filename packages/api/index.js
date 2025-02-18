@@ -42,7 +42,7 @@ const createMediaChannel = async (user) => {
 
 	user.mediaChannel = user.peer.createDataChannel("media",{
 		ordered: false,
-		maxRetransmits: 0
+		maxPacketLifeTime: 1 
 	});
 
 	user.mediaChannel.onopen = () => {
@@ -103,9 +103,8 @@ const run = async () => {
 	app.server
 		.ws("/*", {
 			/* Options */
-			// noDelay: true,
-			compression: uWs.SHARED_COMPRESSOR,
-			maxPayloadLength: 16 * 1024, // 16 * 1024 * 1024
+			compression: uWs.DEDICATED_COMPRESSOR_16KB,
+			maxPayloadLength: 16 * 1024,
 			idleTimeout: 0,
 			/* Handlers */
 			upgrade: async (res, req, context) => {
